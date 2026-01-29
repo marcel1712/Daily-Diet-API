@@ -1,7 +1,12 @@
-import fastify from "fastify";
+import { knex } from './database'
+import { env } from './env/index'
+import { userRoutes } from "./routes/users";
+import Fastify from 'fastify'
+import cookie from '@fastify/cookie'
 
-export const app = fastify()
+export const app = Fastify();
 
-app.get('/test', () => {
-    return 'test'
+app.register(cookie)
+app.register(userRoutes, {
+    prefix: 'users',
 })
