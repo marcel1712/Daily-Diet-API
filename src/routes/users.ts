@@ -2,7 +2,7 @@ import { FastifyInstance } from "fastify";
 import { knex } from "../database";
 import { z } from 'zod';
 import { randomUUID } from "node:crypto";
-
+import { checkSessionIdExists } from "../middleware/check-session-id-exists";
 
 export async function userRoutes(app: FastifyInstance) {
 
@@ -37,13 +37,23 @@ export async function userRoutes(app: FastifyInstance) {
         return reply.status(201).send()
     })
 
-    app.get('/', {}, async (request) => {
+    app.get('/', { preHandler: }, async (request) => {
 
         const user = await knex('users')
             .select()
 
         return { user }
 
+    })
+
+    app.get('/me', {preHandler: [checkSessionIdExists]}, async (request) => {
+        const userId = request.userId
+
+        const user = await knex('users')
+            .where({id: userId})
+            .first()
+
+            return { user }
     })
 
     app.get('/:id', {}, async(request) => {
