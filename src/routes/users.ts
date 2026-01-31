@@ -37,7 +37,7 @@ export async function userRoutes(app: FastifyInstance) {
         return reply.status(201).send()
     })
 
-    app.get('/', { preHandler: }, async (request) => {
+    app.get('/', { preHandler: [checkSessionIdExists]}, async (request) => {
 
         const user = await knex('users')
             .select()
