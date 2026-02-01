@@ -37,39 +37,59 @@ export async function userRoutes(app: FastifyInstance) {
         return reply.status(201).send()
     })
 
-    app.get('/', { preHandler: [checkSessionIdExists]}, async (request) => {
 
-        const user = await knex('users')
-            .select()
-
-        return { user }
-
-    })
-
-    app.get('/me', {preHandler: [checkSessionIdExists]}, async (request) => {
+    app.get('/me', { preHandler: [checkSessionIdExists] }, async (request) => {
         const userId = request.userId
 
         const user = await knex('users')
-            .where({id: userId})
-            .first()
-
-            return { user }
-    })
-
-    app.get('/:id', {}, async(request) => {
-
-        const getUserParamsSchema = z.object({
-            id: z.string().uuid(),
-        })
-
-        const { id } = getUserParamsSchema.parse(request.params)
-
-        const user = await knex('users')
-            .where({
-                id
-            })
+            .where({ id: userId })
             .first()
 
         return { user }
+    })
+
+
+    app.get('/metrics', { preHandler: [checkSessionIdExists] }, async (request, reply) => {
+
+        const userId = request.userId
+
+        const countTotalMeals = await knex('meals')
+            .where({ user_id: userId })
+            .count('id as total')
+            .first()
+
+        const countTotalInDiet = await knex('meals')
+            .where({ user_id: userId, is_diet: true })
+            .count('id as total')
+            .first()
+
+        const countTotalOutDiet = await knex('meals')
+            .where({ user_id: userId, is_diet: false })
+            .count('id as total')
+            .first()
+
+        const meals  = await knex('meals')
+            .where({ user_id: userId })
+            .orderBy('date', 'asc')
+            .select()
+
+        let currentStreak: number = 0
+        let bestStreak: number = 0
+
+        meals.forEach(meal => {
+            if (meal.is_diet) {
+                currentStreak++
+                bestStreak = Math.max(bestStreak, currentStreak)
+            } else {
+                currentStreak = 0
+            }
+        })
+
+        return { 
+            countTotalMeals: Number(countTotalMeals?.total), 
+            countTotalInDiet: Number(countTotalInDiet?.total), 
+            countTotalOutDiet: Number(countTotalOutDiet?.total), 
+            bestStreak }
+
     })
 }
