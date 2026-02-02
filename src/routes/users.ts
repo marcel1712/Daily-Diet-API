@@ -21,6 +21,17 @@ export async function userRoutes(app: FastifyInstance) {
 
         const sessionId = randomUUID()
 
+        const existingUser = await knex('users')
+            .where({ email })
+            .first()
+
+        if (existingUser) {
+            return reply.status(409).send({
+                error: 'Email already exists'
+            })
+        }
+
+
         await knex('users').insert({
             id: randomUUID(),
             name,
@@ -68,7 +79,7 @@ export async function userRoutes(app: FastifyInstance) {
             .count('id as total')
             .first()
 
-        const meals  = await knex('meals')
+        const meals = await knex('meals')
             .where({ user_id: userId })
             .orderBy('date', 'asc')
             .select()
@@ -85,11 +96,12 @@ export async function userRoutes(app: FastifyInstance) {
             }
         })
 
-        return { 
-            countTotalMeals: Number(countTotalMeals?.total), 
-            countTotalInDiet: Number(countTotalInDiet?.total), 
-            countTotalOutDiet: Number(countTotalOutDiet?.total), 
-            bestStreak }
+        return {
+            countTotalMeals: Number(countTotalMeals?.total),
+            countTotalInDiet: Number(countTotalInDiet?.total),
+            countTotalOutDiet: Number(countTotalOutDiet?.total),
+            bestStreak
+        }
 
     })
 }
